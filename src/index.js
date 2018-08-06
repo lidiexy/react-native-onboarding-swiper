@@ -4,7 +4,9 @@ import {
   FlatList,
   StatusBar,
   SafeAreaView,
+  ViewPropTypes,
 } from 'react-native';
+
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import tinycolor from 'tinycolor2';
@@ -35,7 +37,7 @@ class Onboarding extends Component {
   componentDidUpdate() {
     Animated.timing(this.state.backgroundColorAnim, {
       toValue: 1,
-      duration: 500,
+      duration: this.props.transitionAnimationDuration,
     }).start();
   }
 
@@ -67,13 +69,7 @@ class Onboarding extends Component {
   keyExtractor = (item, index) => index.toString();
 
   renderItem = ({ item }) => {
-    const {
-      image,
-      title,
-      subtitle,
-      backgroundColor,
-      imageContainerStyles,
-    } = item;
+    const { image, title, subtitle, backgroundColor } = item;
     const isLight = tinycolor(backgroundColor).getBrightness() > 180;
 
     return (
@@ -84,7 +80,7 @@ class Onboarding extends Component {
         subtitle={subtitle}
         width={this.state.width || Dimensions.get('window').width}
         height={this.state.height || Dimensions.get('window').height}
-        imageContainerStyles={imageContainerStyles}
+        imageContainerStyles={this.props.imageContainerStyles}
       />
     );
   };
@@ -107,6 +103,7 @@ class Onboarding extends Component {
       NextButtonComponent,
       DotComponent,
       flatlistProps,
+      skipToPage,
     } = this.props;
     const currentPage = pages[this.state.currentPage];
     const currentBackgroundColor = currentPage.backgroundColor;
@@ -129,18 +126,26 @@ class Onboarding extends Component {
 
     if (alterBottomColor !== undefined) {
       console.warn(
-        'The prop alterBottomColor on react-native-onboarding-swiper is depricated and will be removed soon. Use `bottomBarHighlight` instead.'
+        'The prop alterBottomColor on react-native-onboarding-swiper is deprecated and will be removed soon. Use `bottomBarHighlight` instead.'
       );
     }
+
+    const skipFun =
+      skipToPage != null
+        ? () => {
+            this.flatList.scrollToIndex({
+              animated: true,
+              index: skipToPage,
+            });
+          }
+        : onSkip;
 
     return (
       <Animated.View
         onLayout={this._onLayout}
         style={{ flex: 1, backgroundColor, justifyContent: 'center' }}
       >
-        {controlStatusBar && (
-          <StatusBar barStyle={barStyle} />
-        )}
+        {controlStatusBar && <StatusBar barStyle={barStyle} />}
         <FlatList
           ref={list => {
             this.flatList = list;
@@ -168,7 +173,7 @@ class Onboarding extends Component {
             showDone={showDone}
             numPages={pages.length}
             currentPage={this.state.currentPage}
-            onSkip={onSkip}
+            onSkip={skipFun}
             onDone={onDone}
             onNext={this.goNext}
             skipLabel={skipLabel}
@@ -200,6 +205,7 @@ Onboarding.propTypes = {
   ).isRequired,
   bottomBarHighlight: PropTypes.bool,
   bottomBarHeight: PropTypes.number,
+  controlStatusBar: PropTypes.bool,
   showSkip: PropTypes.bool,
   showNext: PropTypes.bool,
   showDone: PropTypes.bool,
@@ -211,6 +217,9 @@ Onboarding.propTypes = {
   DoneButtonComponent: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
   NextButtonComponent: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
   DotComponent: PropTypes.oneOfType([PropTypes.element, PropTypes.func]),
+  imageContainerStyles: ViewPropTypes.style,
+  transitionAnimationDuration: PropTypes.number,
+  skipToPage: PropTypes.number,
 };
 
 Onboarding.defaultProps = {
@@ -228,6 +237,9 @@ Onboarding.defaultProps = {
   DoneButtonComponent: DoneButton,
   NextButtonComponent: NextButton,
   DotComponent: Dot,
+  imageContainerStyles: null,
+  transitionAnimationDuration: 500,
+  skipToPage: null,
 };
 
 const styles = {
